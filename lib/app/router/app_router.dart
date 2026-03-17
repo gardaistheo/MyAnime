@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/anime_details/presentation/pages/anime_details_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
+import '../../features/library/presentation/pages/library_page.dart';
 import '../../features/screen/presentation/pages/screen_search_page.dart';
 import '../../features/placeholder/presentation/pages/placeholder_tab_page.dart';
 import '../../shared/widgets/anime_app_shell.dart';
@@ -23,12 +24,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.list,
                 name: AppRoutes.listName,
-                builder: (context, state) => const PlaceholderTabPage(
-                  title: 'Liste',
-                  subtitle:
-                      'Ta bibliothèque arrivera quand tu m’enverras son écran.',
-                  icon: Icons.video_library_rounded,
-                ),
+                builder: (context, state) => const LibraryPage(),
               ),
             ],
           ),

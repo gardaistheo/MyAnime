@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../features/library/presentation/controllers/library_controller.dart';
+import '../../../../shared/models/anime_summary.dart';
 import '../../../../shared/providers/repositories.dart';
 import '../../../../shared/widgets/anime_poster.dart';
 import '../../../../shared/widgets/anime_primary_button.dart';
@@ -24,6 +26,10 @@ class AnimeDetailsPage extends ConsumerWidget {
       body: SafeArea(
         child: detailsAsync.when(
           data: (details) {
+            final isSaved = ref.watch(libraryMembershipProvider(details.id));
+            final libraryController =
+                ref.read(libraryControllerProvider.notifier);
+
             return SingleChildScrollView(
               key: const Key('anime_details_page'),
               child: Column(
@@ -62,6 +68,7 @@ class AnimeDetailsPage extends ConsumerWidget {
                             children: [
                               AnimePoster(
                                 title: details.title,
+                                imageUrl: details.coverImageUrl,
                                 width: 132,
                                 height: 176,
                               ),
@@ -90,8 +97,23 @@ class AnimeDetailsPage extends ConsumerWidget {
                             runSpacing: 10,
                             children: [
                               AnimePrimaryButton(
-                                label: 'Ajouter',
-                                onPressed: () {},
+                                label: isSaved ? 'Retirer' : 'Ajouter',
+                                onPressed: () => libraryController.toggleAnime(
+                                  AnimeSummary(
+                                    id: details.id,
+                                    title: details.title,
+                                    subtitle:
+                                        '${details.studio} • ${details.episodeCount > 0 ? '${details.episodeCount} ep' : 'Épisodes ?'}',
+                                    description: details.description,
+                                    tags: const [],
+                                    episodeCount: details.episodeCount,
+                                    scoreLabel: details.scoreLabel,
+                                    coverImageUrl: details.coverImageUrl,
+                                    studio: details.studio,
+                                    averageScore: details.averageScore,
+                                    siteUrl: details.siteUrl,
+                                  ),
+                                ),
                               ),
                               _InfoPill(label: details.episodeProgressLabel),
                               _InfoPill(label: details.scoreLabel),

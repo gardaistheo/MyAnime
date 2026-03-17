@@ -11,10 +11,16 @@ class AnimeCard extends StatelessWidget {
     super.key,
     required this.anime,
     required this.onTap,
+    this.actionIcon,
+    this.actionLabel,
+    this.onActionPressed,
   });
 
   final AnimeSummary anime;
   final VoidCallback onTap;
+  final IconData? actionIcon;
+  final String? actionLabel;
+  final VoidCallback? onActionPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +35,11 @@ class AnimeCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AnimePoster(title: anime.title, compact: true),
+              AnimePoster(
+                title: anime.title,
+                compact: true,
+                imageUrl: anime.coverImageUrl,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
@@ -63,6 +73,17 @@ class AnimeCard extends StatelessWidget {
                         for (final tag in anime.tags) _TagChip(label: tag),
                       ],
                     ),
+                    if (actionIcon != null && onActionPressed != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: onActionPressed,
+                          icon: Icon(actionIcon, size: 18),
+                          label: Text(actionLabel ?? ''),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

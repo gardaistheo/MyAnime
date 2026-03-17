@@ -7,12 +7,14 @@ class AnimePoster extends StatelessWidget {
   const AnimePoster({
     super.key,
     required this.title,
+    this.imageUrl,
     this.width = 74,
     this.height = 104,
     this.compact = false,
   });
 
   final String title;
+  final String? imageUrl;
   final double width;
   final double height;
   final bool compact;
@@ -40,16 +42,44 @@ class AnimePoster extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Text(
-          compact ? title.substring(0, 1) : title.toUpperCase(),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.accent,
-                fontSize: compact ? 22 : 18,
-                fontWeight: FontWeight.w900,
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl != null && imageUrl!.isNotEmpty
+          ? Image.network(
+              imageUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _PosterFallback(
+                title: title,
+                compact: compact,
               ),
-        ),
+            )
+          : _PosterFallback(
+              title: title,
+              compact: compact,
+            ),
+    );
+  }
+}
+
+class _PosterFallback extends StatelessWidget {
+  const _PosterFallback({
+    required this.title,
+    required this.compact,
+  });
+
+  final String title;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        compact ? title.substring(0, 1) : title.toUpperCase(),
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.accent,
+              fontSize: compact ? 22 : 18,
+              fontWeight: FontWeight.w900,
+            ),
       ),
     );
   }

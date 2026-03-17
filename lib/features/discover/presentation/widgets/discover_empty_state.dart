@@ -22,12 +22,12 @@ class DiscoverEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'On cherche quoi ?',
+              'Aucun résultat',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Si t’as besoin d’affiner tes recherches n’hésite pas à utiliser les boutons Filter et Sort, c’est tes meilleurs amis.',
+              'Essaie un autre titre. AniList répond bien, donc si c’est vide c’est juste que la recherche ne matche rien de correct.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: AppColors.textSecondary,

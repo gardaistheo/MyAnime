@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../features/library/presentation/controllers/library_controller.dart';
 import '../../../../shared/widgets/anime_card.dart';
 import '../../../../shared/widgets/anime_filter_bar.dart';
 import '../../../../shared/widgets/anime_search_bar.dart';
@@ -26,6 +27,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      ref.read(discoverControllerProvider.notifier).loadInitial();
+    });
     _textController = TextEditingController();
     _focusNode = FocusNode()
       ..addListener(() {
@@ -73,7 +77,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                   _focusNode.unfocus();
                 },
               ),
-              if (state.mode != DiscoverViewMode.placeholder) ...[
+              if (state.mode != DiscoverViewMode.loading ||
+                  state.results.isNotEmpty ||
+                  state.query.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
                 const AnimeFilterBar(),
               ],
@@ -82,12 +88,16 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: switch (state.mode) {
-                    DiscoverViewMode.placeholder =>
-                      const DiscoverPlaceholderState(),
-                    DiscoverViewMode.idle => const DiscoverEmptyState(),
-                    DiscoverViewMode.loading => const DiscoverLoadingState(),
+                    DiscoverViewMode.loading =>
+                      state.results.isEmpty && state.query.isEmpty
+                          ? const DiscoverPlaceholderState()
+                          : const DiscoverLoadingState(),
+                    DiscoverViewMode.empty => const DiscoverEmptyState(),
                     DiscoverViewMode.results => _DiscoverResults(
                         animeResults: state.results,
+                      ),
+                    DiscoverViewMode.error => _DiscoverErrorState(
+                        message: state.errorMessage ?? 'Erreur inconnue.',
                       ),
                   },
                 ),
@@ -119,11 +129,44 @@ class _DiscoverResults extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final anime = animeResults[index];
-        return AnimeCard(
-          anime: anime,
-          onTap: () => context.push(AppRoutes.animeDetailsLocation(anime.id)),
+        return Consumer(
+          builder: (context, ref, child) {
+            final isSaved = ref.watch(libraryMembershipProvider(anime.id));
+            final libraryController =
+                ref.read(libraryControllerProvider.notifier);
+
+            return AnimeCard(
+              anime: anime,
+              actionIcon: isSaved
+                  ? Icons.bookmark_remove_rounded
+                  : Icons.bookmark_add_rounded,
+              actionLabel: isSaved ? 'Retirer' : 'Ajouter',
+              onActionPressed: () => libraryController.toggleAnime(anime),
+              onTap: () =>
+                  context.push(AppRoutes.animeDetailsLocation(anime.id)),
+            );
+          },
         );
       },
+    );
+  }
+}
+
+class _DiscoverErrorState extends StatelessWidget {
+  const _DiscoverErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Text(
+          'Impossible de charger AniList.\n$message',
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }

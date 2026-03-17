@@ -1,11 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/models/anime_summary.dart';
 import '../../../../shared/providers/repositories.dart';
 
-enum DiscoverViewMode { placeholder, idle, loading, results }
+enum DiscoverViewMode { loading, results, empty, error }
 
 class DiscoverState {
   const DiscoverState({
@@ -13,30 +11,36 @@ class DiscoverState {
     required this.query,
     required this.results,
     required this.isSearchActive,
+    required this.errorMessage,
   });
 
   const DiscoverState.initial()
-      : mode = DiscoverViewMode.placeholder,
+      : mode = DiscoverViewMode.loading,
         query = '',
         results = const [],
-        isSearchActive = false;
+        isSearchActive = false,
+        errorMessage = null;
 
   final DiscoverViewMode mode;
   final String query;
   final List<AnimeSummary> results;
   final bool isSearchActive;
+  final String? errorMessage;
 
   DiscoverState copyWith({
     DiscoverViewMode? mode,
     String? query,
     List<AnimeSummary>? results,
     bool? isSearchActive,
+    String? errorMessage,
+    bool clearError = false,
   }) {
     return DiscoverState(
       mode: mode ?? this.mode,
       query: query ?? this.query,
       results: results ?? this.results,
       isSearchActive: isSearchActive ?? this.isSearchActive,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
@@ -51,55 +55,78 @@ class DiscoverController extends Notifier<DiscoverState> {
   DiscoverState build() => const DiscoverState.initial();
 
   void setSearchActive(bool isActive) {
-    final nextMode = state.query.trim().isNotEmpty
-        ? state.mode
-        : (isActive ? DiscoverViewMode.idle : DiscoverViewMode.placeholder);
+    state = state.copyWith(isSearchActive: isActive);
+  }
 
-    state = state.copyWith(
-      isSearchActive: isActive,
-      mode: nextMode,
+  Future<void> loadInitial() async {
+    await _runRequest(
+      query: '',
+      loader: () => ref.read(animeRepositoryProvider).fetchTrendingAnime(),
     );
   }
 
-  void cancelSearch() {
+  Future<void> cancelSearch() async {
     _requestId++;
-    state = const DiscoverState.initial();
+    state = state.copyWith(
+      query: '',
+      results: const [],
+      clearError: true,
+      mode: DiscoverViewMode.loading,
+    );
+    await loadInitial();
   }
 
   Future<void> updateQuery(String query) async {
     final trimmed = query.trim();
+
+    if (trimmed.isEmpty) {
+      state = state.copyWith(query: '');
+      await loadInitial();
+      return;
+    }
+
+    await _runRequest(
+      query: trimmed,
+      loader: () => ref.read(animeRepositoryProvider).searchAnime(trimmed),
+    );
+  }
+
+  Future<void> _runRequest({
+    required String query,
+    required Future<List<AnimeSummary>> Function() loader,
+  }) async {
     _requestId++;
     final currentRequest = _requestId;
 
-    if (trimmed.isEmpty) {
-      state = state.copyWith(
-        query: '',
-        results: const [],
-        mode: state.isSearchActive
-            ? DiscoverViewMode.idle
-            : DiscoverViewMode.placeholder,
-      );
-      return;
-    }
-
     state = state.copyWith(
-      query: trimmed,
+      query: query,
       mode: DiscoverViewMode.loading,
       results: const [],
+      clearError: true,
     );
 
-    await Future<void>.delayed(const Duration(milliseconds: 550));
-    final results =
-        await ref.read(animeRepositoryProvider).searchAnime(trimmed);
+    try {
+      final results = await loader();
+      if (currentRequest != _requestId) {
+        return;
+      }
 
-    if (currentRequest != _requestId) {
-      return;
+      state = state.copyWith(
+        query: query,
+        results: results,
+        mode:
+            results.isEmpty ? DiscoverViewMode.empty : DiscoverViewMode.results,
+      );
+    } catch (error) {
+      if (currentRequest != _requestId) {
+        return;
+      }
+      state = state.copyWith(
+        query: query,
+        results: const [],
+        errorMessage: '$error',
+        mode: DiscoverViewMode.error,
+      );
     }
-
-    state = state.copyWith(
-      query: trimmed,
-      results: results,
-      mode: DiscoverViewMode.results,
-    );
   }
 }
