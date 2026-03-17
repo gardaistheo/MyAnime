@@ -69,8 +69,10 @@ class TraceMoeResult {
 
   String get similarityPercent => '${(similarity * 100).toStringAsFixed(1)}%';
 
+  int? get resolvedEpisode => episode ?? _extractEpisodeFromFilename(filename);
+
   String get episodeLabel =>
-      episode == null ? 'Épisode inconnu' : 'Épisode $episode';
+      resolvedEpisode == null ? 'Épisode inconnu' : 'Épisode $resolvedEpisode';
 
   String get timestampLabel => _formatTimestamp(at);
 
@@ -104,6 +106,24 @@ class TraceMoeResult {
     if (value is String) {
       return int.tryParse(value) ?? double.tryParse(value)?.round();
     }
+    return null;
+  }
+
+  static int? _extractEpisodeFromFilename(String value) {
+    final patterns = [
+      RegExp(r'(?:episode|ep)[\s._-]*(\d{1,4})', caseSensitive: false),
+      RegExp(r'[\s\[(_-](\d{1,4})(?:[)\] ._-]|$)'),
+    ];
+
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(value);
+      final candidate = match?.group(1);
+      final parsed = int.tryParse(candidate ?? '');
+      if (parsed != null && parsed > 0 && parsed < 5000) {
+        return parsed;
+      }
+    }
+
     return null;
   }
 }
