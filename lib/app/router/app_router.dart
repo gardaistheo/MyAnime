@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/anime_details/presentation/pages/anime_details_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
+import '../../features/screen/presentation/pages/screen_search_page.dart';
 import '../../features/placeholder/presentation/pages/placeholder_tab_page.dart';
 import '../../shared/widgets/anime_app_shell.dart';
 import 'routes.dart';
@@ -55,11 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.screen,
                 name: AppRoutes.screenName,
-                builder: (context, state) => const PlaceholderTabPage(
-                  title: 'Screen',
-                  subtitle: 'Onglet réservé. Le design précis manque encore.',
-                  icon: Icons.auto_awesome_rounded,
-                ),
+                builder: (context, state) => const ScreenSearchPage(),
               ),
             ],
           ),
