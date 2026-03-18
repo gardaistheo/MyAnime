@@ -26,9 +26,25 @@ class AnimeDetailsPage extends ConsumerWidget {
       body: SafeArea(
         child: detailsAsync.when(
           data: (details) {
-            final isSaved = ref.watch(libraryMembershipProvider(details.id));
+            final savedAnime = ref.watch(libraryAnimeProvider(details.id));
+            final isSaved = savedAnime != null;
             final libraryController =
                 ref.read(libraryControllerProvider.notifier);
+            final libraryAnime = AnimeSummary(
+              id: details.id,
+              title: details.title,
+              subtitle:
+                  '${details.studio} • ${details.episodeCount > 0 ? '${details.episodeCount} ep' : 'Épisodes ?'}',
+              description: details.description,
+              tags: const [],
+              episodeCount: details.episodeCount,
+              scoreLabel: details.scoreLabel,
+              coverImageUrl: details.coverImageUrl,
+              studio: details.studio,
+              averageScore: details.averageScore,
+              siteUrl: details.siteUrl,
+              currentEpisode: savedAnime?.currentEpisode ?? 0,
+            );
 
             return SingleChildScrollView(
               key: const Key('anime_details_page'),
@@ -97,26 +113,41 @@ class AnimeDetailsPage extends ConsumerWidget {
                             runSpacing: 10,
                             children: [
                               AnimePrimaryButton(
-                                label: isSaved ? 'Retirer' : 'Ajouter',
-                                onPressed: () => libraryController.toggleAnime(
-                                  AnimeSummary(
-                                    id: details.id,
-                                    title: details.title,
-                                    subtitle:
-                                        '${details.studio} • ${details.episodeCount > 0 ? '${details.episodeCount} ep' : 'Épisodes ?'}',
-                                    description: details.description,
-                                    tags: const [],
-                                    episodeCount: details.episodeCount,
-                                    scoreLabel: details.scoreLabel,
-                                    coverImageUrl: details.coverImageUrl,
-                                    studio: details.studio,
-                                    averageScore: details.averageScore,
-                                    siteUrl: details.siteUrl,
-                                  ),
-                                ),
+                                label: isSaved
+                                    ? 'Mettre à jour'
+                                    : 'Suivre cet anime',
+                                onPressed: () async {
+                                  final selectedEpisode =
+                                      await _showEpisodePicker(
+                                    context,
+                                    initialEpisode: savedAnime?.currentEpisode,
+                                    maxEpisodes: details.episodeCount,
+                                  );
+                                  if (selectedEpisode == null ||
+                                      !context.mounted) {
+                                    return;
+                                  }
+
+                                  await libraryController.saveProgress(
+                                    libraryAnime,
+                                    selectedEpisode,
+                                  );
+                                },
                               ),
-                              _InfoPill(label: details.episodeProgressLabel),
+                              _InfoPill(
+                                label: details.episodeCount > 0
+                                    ? '${savedAnime?.currentEpisode ?? 0}/${details.episodeCount} ep'
+                                    : 'Épisode ${savedAnime?.currentEpisode ?? 0}',
+                              ),
                               _InfoPill(label: details.scoreLabel),
+                              if (isSaved)
+                                TextButton(
+                                  onPressed: () =>
+                                      libraryController.toggleAnime(
+                                    savedAnime,
+                                  ),
+                                  child: const Text('Retirer'),
+                                ),
                             ],
                           ),
                         ),
@@ -128,7 +159,7 @@ class AnimeDetailsPage extends ConsumerWidget {
                     child: Column(
                       children: [
                         Text(
-                          'Meublez moi tout ca',
+                          'Synopsis',
                           style: Theme.of(context).textTheme.titleLarge,
                           textAlign: TextAlign.center,
                         ),
@@ -156,6 +187,56 @@ class AnimeDetailsPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<int?> _showEpisodePicker(
+  BuildContext context, {
+  required int maxEpisodes,
+  int? initialEpisode,
+}) async {
+  final controller = TextEditingController(
+    text: (initialEpisode ?? 0).toString(),
+  );
+
+  return showDialog<int>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text('Épisode actuel'),
+        content: TextField(
+          key: const Key('episode_progress_field'),
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: maxEpisodes > 0
+                ? 'Entre 0 et $maxEpisodes'
+                : 'Numéro d’épisode',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              final parsedValue = int.tryParse(controller.text.trim());
+              if (parsedValue == null || parsedValue < 0) {
+                return;
+              }
+
+              final nextEpisode = maxEpisodes > 0
+                  ? parsedValue.clamp(0, maxEpisodes)
+                  : parsedValue;
+              Navigator.of(dialogContext).pop(nextEpisode);
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _InfoPill extends StatelessWidget {

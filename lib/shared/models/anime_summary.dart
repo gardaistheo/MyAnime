@@ -11,6 +11,7 @@ class AnimeSummary {
     required this.studio,
     required this.averageScore,
     required this.siteUrl,
+    this.currentEpisode = 0,
   });
 
   factory AnimeSummary.fromJson(Map<String, dynamic> json) {
@@ -26,6 +27,7 @@ class AnimeSummary {
       studio: json['studio'] as String,
       averageScore: json['averageScore'] as int,
       siteUrl: json['siteUrl'] as String,
+      currentEpisode: json['currentEpisode'] as int? ?? 0,
     );
   }
 
@@ -40,6 +42,37 @@ class AnimeSummary {
   final String studio;
   final int averageScore;
   final String siteUrl;
+  final int currentEpisode;
+
+  AnimeSummary copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    String? description,
+    List<String>? tags,
+    int? episodeCount,
+    String? scoreLabel,
+    String? coverImageUrl,
+    String? studio,
+    int? averageScore,
+    String? siteUrl,
+    int? currentEpisode,
+  }) {
+    return AnimeSummary(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      episodeCount: episodeCount ?? this.episodeCount,
+      scoreLabel: scoreLabel ?? this.scoreLabel,
+      coverImageUrl: coverImageUrl ?? this.coverImageUrl,
+      studio: studio ?? this.studio,
+      averageScore: averageScore ?? this.averageScore,
+      siteUrl: siteUrl ?? this.siteUrl,
+      currentEpisode: currentEpisode ?? this.currentEpisode,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -54,6 +87,7 @@ class AnimeSummary {
       'studio': studio,
       'averageScore': averageScore,
       'siteUrl': siteUrl,
+      'currentEpisode': currentEpisode,
     };
   }
 }

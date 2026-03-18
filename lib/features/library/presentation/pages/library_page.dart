@@ -50,6 +50,7 @@ class LibraryPage extends ConsumerWidget {
                         final item = anime[index];
                         return AnimeCard(
                           anime: item,
+                          showProgress: true,
                           actionIcon: Icons.bookmark_remove_rounded,
                           actionLabel: 'Retirer',
                           onActionPressed: () =>

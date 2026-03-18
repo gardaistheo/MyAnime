@@ -14,6 +14,7 @@ class AnimeCard extends StatelessWidget {
     this.actionIcon,
     this.actionLabel,
     this.onActionPressed,
+    this.showProgress = false,
   });
 
   final AnimeSummary anime;
@@ -21,6 +22,7 @@ class AnimeCard extends StatelessWidget {
   final IconData? actionIcon;
   final String? actionLabel;
   final VoidCallback? onActionPressed;
+  final bool showProgress;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +60,19 @@ class AnimeCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (showProgress) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        anime.episodeCount > 0
+                            ? 'Progression: ${anime.currentEpisode}/${anime.episodeCount} ep'
+                            : 'Progression: épisode ${anime.currentEpisode}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.textPrimary,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       anime.description,

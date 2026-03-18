@@ -14,6 +14,18 @@ final libraryMembershipProvider = Provider.family<bool, String>((ref, animeId) {
   return library.any((anime) => anime.id == animeId);
 });
 
+final libraryAnimeProvider =
+    Provider.family<AnimeSummary?, String>((ref, animeId) {
+  final library =
+      ref.watch(libraryControllerProvider).asData?.value ?? const [];
+  for (final anime in library) {
+    if (anime.id == animeId) {
+      return anime;
+    }
+  }
+  return null;
+});
+
 class LibraryController extends AsyncNotifier<List<AnimeSummary>> {
   @override
   Future<List<AnimeSummary>> build() {
@@ -27,6 +39,25 @@ class LibraryController extends AsyncNotifier<List<AnimeSummary>> {
     final next = exists
         ? current.where((item) => item.id != anime.id).toList()
         : [...current, anime];
+
+    state = AsyncData(next);
+    await ref.read(libraryRepositoryProvider).saveLibrary(next);
+  }
+
+  Future<void> saveProgress(AnimeSummary anime, int currentEpisode) async {
+    final current = state.asData?.value ?? const [];
+    final clampedEpisode = anime.episodeCount > 0
+        ? currentEpisode.clamp(0, anime.episodeCount)
+        : currentEpisode.clamp(0, 9999);
+    final updatedAnime = anime.copyWith(currentEpisode: clampedEpisode);
+    final index = current.indexWhere((item) => item.id == anime.id);
+
+    final next = [...current];
+    if (index >= 0) {
+      next[index] = updatedAnime;
+    } else {
+      next.add(updatedAnime);
+    }
 
     state = AsyncData(next);
     await ref.read(libraryRepositoryProvider).saveLibrary(next);
