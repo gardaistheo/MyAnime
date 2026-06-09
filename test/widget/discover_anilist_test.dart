@@ -10,7 +10,7 @@ import '../helpers/fakes.dart';
 void main() {
   testWidgets('Discover search surfaces AniList results for a query',
       (tester) async {
-    final fakeRepository = FakeAniListRepository(results: fakeAnimeResults);
+    const fakeRepository = FakeAniListRepository(results: fakeAnimeResults);
     final fakeLibraryRepo = FakeLibraryRepository([]);
 
     await tester.pumpWidget(
@@ -42,7 +42,7 @@ void main() {
 
   testWidgets('Discover allows adding an AniList result to the local list',
       (tester) async {
-    final fakeRepository = FakeAniListRepository(results: fakeAnimeResults);
+    const fakeRepository = FakeAniListRepository(results: fakeAnimeResults);
     final fakeLibraryRepo = FakeLibraryRepository([]);
 
     await tester.pumpWidget(

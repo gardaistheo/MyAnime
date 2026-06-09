@@ -34,7 +34,7 @@ class _FakePicker implements ScreenImagePicker {
 final _sampleBytes = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+yqZ0AAAAASUVORK5CYII=',
 );
-final _sampleResult = TraceMoeResult(
+const _sampleResult = TraceMoeResult(
   anilistId: 42,
   title: 'Naruto',
   episode: 140,

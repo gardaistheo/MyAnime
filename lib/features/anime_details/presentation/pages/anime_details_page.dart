@@ -178,9 +178,24 @@ class AnimeDetailsPage extends ConsumerWidget {
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => Center(
-            child: Text(
-              'Impossible de charger la fiche anime.',
-              style: Theme.of(context).textTheme.bodyLarge,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Impossible de charger la fiche anime.',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () =>
+                        ref.invalidate(animeDetailsProvider(animeId)),
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

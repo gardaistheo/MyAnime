@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../features/library/presentation/controllers/library_controller.dart';
+import '../../../../shared/models/anime_summary.dart';
 import '../../../../shared/widgets/anime_card.dart';
 import '../../../../shared/widgets/anime_filter_bar.dart';
 import '../../../../shared/widgets/anime_search_bar.dart';
@@ -98,6 +99,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                       ),
                     DiscoverViewMode.error => _DiscoverErrorState(
                         message: state.errorMessage ?? 'Erreur inconnue.',
+                        onRetry: controller.loadInitial,
                       ),
                   },
                 ),
@@ -113,7 +115,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 class _DiscoverResults extends StatelessWidget {
   const _DiscoverResults({required this.animeResults});
 
-  final List<dynamic> animeResults;
+  final List<AnimeSummary> animeResults;
 
   @override
   Widget build(BuildContext context) {
@@ -153,18 +155,32 @@ class _DiscoverResults extends StatelessWidget {
 }
 
 class _DiscoverErrorState extends StatelessWidget {
-  const _DiscoverErrorState({required this.message});
+  const _DiscoverErrorState({
+    required this.message,
+    required this.onRetry,
+  });
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Text(
-          'Impossible de charger AniList.\n$message',
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Impossible de charger AniList.\n$message',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Réessayer'),
+            ),
+          ],
         ),
       ),
     );

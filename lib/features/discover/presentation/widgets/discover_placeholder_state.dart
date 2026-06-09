@@ -34,7 +34,7 @@ class _PlaceholderSection extends StatelessWidget {
         AnimeSectionHeader(title: title),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(
-          key: Key('discover_placeholder_section_list'),
+          key: const Key('discover_placeholder_section_list'),
           height: 182,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
