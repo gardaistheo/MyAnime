@@ -3,11 +3,19 @@ import '../../../../shared/models/anime_summary.dart';
 import '../services/anilist_graphql_client.dart';
 import 'anime_repository.dart';
 
+/// Implémentation de [AnimeRepository] s'appuyant sur l'API GraphQL AniList.
+///
+/// Toutes les requêtes passent par [AniListGraphqlClient]. Les données brutes
+/// sont normalisées en [AnimeSummary] ou [AnimeDetails] via des méthodes
+/// privées utilitaires.
+///
+/// AniList est une API publique gratuite : aucune clé n'est requise.
 class AniListAnimeRepository implements AnimeRepository {
   AniListAnimeRepository(this._client);
 
   final AniListGraphqlClient _client;
 
+  /// Champs GraphQL communs à toutes les requêtes de liste.
   static const _summaryFields = '''
     id
     episodes
@@ -113,6 +121,7 @@ class AniListAnimeRepository implements AnimeRepository {
       averageScore: averageScore ?? 0,
       siteUrl: media['siteUrl'] as String? ?? '',
       scoreLabel: averageScore == null ? 'Score ?' : '$averageScore/100',
+      // Préférer la bannière pour l'affichage en plein écran, sinon la cover.
       coverImageUrl: media['bannerImage'] as String? ??
           (media['coverImage'] as Map<String, dynamic>)['large'] as String? ??
           '',
@@ -143,6 +152,7 @@ class AniListAnimeRepository implements AnimeRepository {
     return _extractSummaries(data);
   }
 
+  /// Transforme le champ `Page.media` d'une réponse AniList en liste de [AnimeSummary].
   List<AnimeSummary> _extractSummaries(Map<String, dynamic> data) {
     final page = data['Page'] as Map<String, dynamic>;
     final media = (page['media'] as List<dynamic>? ?? const [])
@@ -173,6 +183,7 @@ class AniListAnimeRepository implements AnimeRepository {
     }).toList();
   }
 
+  /// Extrait le nom du studio principal depuis le nœud `studios`.
   static String _pickStudio(Map<String, dynamic> studios) {
     final nodes = (studios['nodes'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
@@ -183,6 +194,7 @@ class AniListAnimeRepository implements AnimeRepository {
     return nodes.first['name'] as String? ?? 'Studio inconnu';
   }
 
+  /// Sélectionne le titre en anglais, puis en romaji, puis en natif.
   static String _pickTitle(Map<String, dynamic> titleMap) {
     return titleMap['english'] as String? ??
         titleMap['romaji'] as String? ??
@@ -190,6 +202,7 @@ class AniListAnimeRepository implements AnimeRepository {
         'Anime inconnu';
   }
 
+  /// Supprime les balises HTML et décode les entités HTML du synopsis AniList.
   static String _sanitizeDescription(String? input) {
     if (input == null || input.isEmpty) {
       return 'Pas de description disponible.';
