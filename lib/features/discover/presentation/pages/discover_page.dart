@@ -10,6 +10,7 @@ import '../../../../shared/widgets/anime_card.dart';
 import '../../../../shared/widgets/anime_filter_bar.dart';
 import '../../../../shared/widgets/anime_search_bar.dart';
 import '../controllers/discover_controller.dart';
+import '../widgets/discover_bottom_sheets.dart';
 import '../widgets/discover_empty_state.dart';
 import '../widgets/discover_loading_state.dart';
 import '../widgets/discover_placeholder_state.dart';
@@ -28,9 +29,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(discoverControllerProvider.notifier).loadInitial();
-    });
+    Future.microtask(
+      () => ref.read(discoverControllerProvider.notifier).loadInitial(),
+    );
     _textController = TextEditingController();
     _focusNode = FocusNode()
       ..addListener(() {
@@ -45,6 +46,29 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Ouvre la bottom sheet de filtrage par genre.
+  void _showFilterSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const DiscoverFilterSheet(),
+    );
+  }
+
+  /// Ouvre la bottom sheet de choix du tri.
+  void _showSortSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const DiscoverSortSheet(),
+    );
   }
 
   @override
@@ -79,10 +103,15 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                 },
               ),
               if (state.mode != DiscoverViewMode.loading ||
-                  state.results.isNotEmpty ||
+                  state.rawResults.isNotEmpty ||
                   state.query.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
-                const AnimeFilterBar(),
+                AnimeFilterBar(
+                  activeGenreCount: state.selectedGenres.length,
+                  sortLabel: state.sortOption.label,
+                  onFilterTap: _showFilterSheet,
+                  onSortTap: _showSortSheet,
+                ),
               ],
               const SizedBox(height: AppSpacing.lg),
               Expanded(
@@ -90,12 +119,13 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
                   duration: const Duration(milliseconds: 250),
                   child: switch (state.mode) {
                     DiscoverViewMode.loading =>
-                      state.results.isEmpty && state.query.isEmpty
+                      state.rawResults.isEmpty && state.query.isEmpty
                           ? const DiscoverPlaceholderState()
                           : const DiscoverLoadingState(),
                     DiscoverViewMode.empty => const DiscoverEmptyState(),
                     DiscoverViewMode.results => _DiscoverResults(
-                        animeResults: state.results,
+                        animeResults: state.displayResults,
+                        hasActiveFilter: state.selectedGenres.isNotEmpty,
                       ),
                     DiscoverViewMode.error => _DiscoverErrorState(
                         message: state.errorMessage ?? 'Erreur inconnue.',
@@ -113,15 +143,26 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 }
 
 class _DiscoverResults extends StatelessWidget {
-  const _DiscoverResults({required this.animeResults});
+  const _DiscoverResults({
+    required this.animeResults,
+    required this.hasActiveFilter,
+  });
 
   final List<AnimeSummary> animeResults;
+
+  /// `true` si un filtre genre est actif (pour adapter le message "vide").
+  final bool hasActiveFilter;
 
   @override
   Widget build(BuildContext context) {
     if (animeResults.isEmpty) {
-      return const Center(
-        child: Text('Aucun anime trouvé.'),
+      return Center(
+        child: Text(
+          hasActiveFilter
+              ? 'Aucun anime ne correspond aux genres sélectionnés.'
+              : 'Aucun anime trouvé.',
+          textAlign: TextAlign.center,
+        ),
       );
     }
 
