@@ -31,10 +31,6 @@ class LibraryPage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                'Ta bibliothèque locale. Pas de sync AniList utilisateur ici pour le moment.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
               const SizedBox(height: AppSpacing.lg),
               Expanded(
                 child: libraryAsync.when(

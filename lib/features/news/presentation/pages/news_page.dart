@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_radii.dart';
 import '../../../../app/theme/app_spacing.dart';
-import '../../../../shared/models/anime_summary.dart';
 import '../controllers/news_controller.dart';
+import '../widgets/news_card.dart';
 
+/// Page News : liste des animes actuellement en cours de diffusion.
+///
+/// Affiche les données issues de [NewsController] (AniList, status RELEASING).
+/// Supporte le pull-to-refresh et le rechargement manuel via l'icône en entête.
 class NewsPage extends ConsumerWidget {
   const NewsPage({super.key});
 
@@ -22,33 +25,9 @@ class NewsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Actu',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                  IconButton(
-                    onPressed: () =>
-                        ref.read(newsControllerProvider.notifier).refresh(),
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Actualiser',
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, AppSpacing.md),
-              child: Text(
-                'Animes en cours de diffusion',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.textMuted),
-              ),
+            _NewsHeader(
+              onRefresh: () =>
+                  ref.read(newsControllerProvider.notifier).refresh(),
             ),
             Expanded(
               child: newsAsync.when(
@@ -59,11 +38,12 @@ class NewsPage extends ConsumerWidget {
                             .read(newsControllerProvider.notifier)
                             .refresh(),
                         child: ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+                          padding:
+                              const EdgeInsets.fromLTRB(16, 0, 16, 40),
                           itemCount: items.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 12),
-                          itemBuilder: (context, index) => _NewsCard(
+                          itemBuilder: (context, index) => NewsCard(
                             anime: items[index],
                             onTap: () => context.push(
                               AppRoutes.animeDetailsLocation(items[index].id),
@@ -73,30 +53,9 @@ class NewsPage extends ConsumerWidget {
                       ),
                 loading: () =>
                     const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.wifi_off_rounded,
-                            size: 48, color: AppColors.textMuted),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'Impossible de charger l\'actu.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextButton(
-                          onPressed: () => ref
-                              .read(newsControllerProvider.notifier)
-                              .refresh(),
-                          child: const Text('Réessayer'),
-                        ),
-                      ],
-                    ),
-                  ),
+                error: (_, __) => _NewsError(
+                  onRetry: () =>
+                      ref.read(newsControllerProvider.notifier).refresh(),
                 ),
               ),
             ),
@@ -107,149 +66,80 @@ class NewsPage extends ConsumerWidget {
   }
 }
 
-class _NewsCard extends StatelessWidget {
-  const _NewsCard({required this.anime, required this.onTap});
+/// En-tête de la page News : titre, sous-titre et bouton de rafraîchissement.
+class _NewsHeader extends StatelessWidget {
+  const _NewsHeader({required this.onRefresh});
 
-  final AnimeSummary anime;
-  final VoidCallback onTap;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceRaised,
-          borderRadius: BorderRadius.circular(AppRadii.lg),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Actu',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              IconButton(
+                onPressed: onRefresh,
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'Actualiser',
+              ),
+            ],
+          ),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, AppSpacing.md),
+          child: Text(
+            'Animes en cours de diffusion',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textMuted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// État d'erreur de la page News avec bouton Réessayer.
+class _NewsError extends StatelessWidget {
+  const _NewsError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Cover — image inset avec coins arrondis sur les 4 côtés
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadii.md),
-                child: SizedBox(
-                  width: 80,
-                  height: 114,
-                  child: anime.coverImageUrl.isNotEmpty
-                      ? Image.network(
-                          anime.coverImageUrl,
-                          width: 80,
-                          height: 114,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              _CoverFallback(title: anime.title),
-                        )
-                      : _CoverFallback(title: anime.title),
-                ),
-              ),
+            const Icon(
+              Icons.wifi_off_rounded,
+              size: 48,
+              color: AppColors.textMuted,
             ),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'En cours',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: AppColors.success,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      anime.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      anime.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: AppColors.textMuted),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      anime.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    if (anime.tags.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 4,
-                        children: [
-                          for (final tag in anime.tags.take(3))
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                tag,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(color: AppColors.textSecondary),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Impossible de charger l\'actu.',
+              style: Theme.of(context).textTheme.bodyLarge,
+              textAlign: TextAlign.center,
             ),
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.sm),
-              child: Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textMuted,
-              ),
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: onRetry,
+              child: const Text('Réessayer'),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CoverFallback extends StatelessWidget {
-  const _CoverFallback({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surfaceMuted,
-      child: Center(
-        child: Text(
-          title.isNotEmpty ? title[0] : '?',
-          style: Theme.of(context)
-              .textTheme
-              .headlineLarge
-              ?.copyWith(color: AppColors.textMuted),
         ),
       ),
     );
