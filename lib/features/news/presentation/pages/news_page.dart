@@ -126,18 +126,26 @@ class _NewsCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover
-            SizedBox(
-              width: 90,
-              height: 130,
-              child: anime.coverImageUrl.isNotEmpty
-                  ? Image.network(
-                      anime.coverImageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          _CoverFallback(title: anime.title),
-                    )
-                  : _CoverFallback(title: anime.title),
+            // Cover — image inset avec coins arrondis sur les 4 côtés
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                child: SizedBox(
+                  width: 80,
+                  height: 114,
+                  child: anime.coverImageUrl.isNotEmpty
+                      ? Image.network(
+                          anime.coverImageUrl,
+                          width: 80,
+                          height: 114,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              _CoverFallback(title: anime.title),
+                        )
+                      : _CoverFallback(title: anime.title),
+                ),
+              ),
             ),
             // Info
             Expanded(

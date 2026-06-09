@@ -112,21 +112,25 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           height: 110,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.surfaceRaised,
                             border: Border.all(
                               color: AppColors.accent.withValues(alpha: 0.4),
                               width: 3,
                             ),
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: profile.avatarPath != null
-                              ? Image.file(
-                                  File(profile.avatarPath!),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) =>
-                                      _AvatarFallback(profile: profile),
-                                )
-                              : _AvatarFallback(profile: profile),
+                          // ClipOval garantit un découpage circulaire parfait,
+                          // sans laisser la couleur de fond visible en périphérie.
+                          child: ClipOval(
+                            child: profile.avatarPath != null
+                                ? Image.file(
+                                    File(profile.avatarPath!),
+                                    width: 110,
+                                    height: 110,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) =>
+                                        _AvatarFallback(profile: profile),
+                                  )
+                                : _AvatarFallback(profile: profile),
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.all(6),
