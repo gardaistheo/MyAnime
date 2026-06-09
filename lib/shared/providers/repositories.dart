@@ -7,6 +7,7 @@ import '../../features/anime/data/repositories/anime_repository.dart';
 import '../../features/anime/data/services/anilist_graphql_client.dart';
 import '../../features/library/data/repositories/library_repository.dart';
 import '../../features/library/data/repositories/local_library_repository.dart';
+import '../../features/profile/data/repositories/profile_repository.dart';
 import '../models/anime_details.dart';
 
 final animeHttpClientProvider = Provider<http.Client>((ref) {
@@ -29,6 +30,10 @@ final sharedPreferencesAsyncProvider = Provider<SharedPreferencesAsync>((ref) {
 
 final libraryRepositoryProvider = Provider<LibraryRepository>((ref) {
   return LocalLibraryRepository(ref.watch(sharedPreferencesAsyncProvider));
+});
+
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  return ProfileRepository(ref.watch(sharedPreferencesAsyncProvider));
 });
 
 final animeDetailsProvider =

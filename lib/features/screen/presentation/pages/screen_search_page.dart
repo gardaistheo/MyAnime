@@ -2,7 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_radii.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -32,7 +34,7 @@ class ScreenSearchPage extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Balance un screenshot d’anime et on tente de retrouver le titre, l’épisode et la confiance du match avec trace.moe.',
+              'Balance un screenshot d\'anime et on tente de retrouver le titre, l\'épisode et la confiance du match avec trace.moe.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
@@ -45,7 +47,7 @@ class ScreenSearchPage extends ConsumerWidget {
                   child: AnimePrimaryButton(
                     label: state.selectedImage == null
                         ? 'Choisir un screenshot'
-                        : 'Changer l’image',
+                        : 'Changer l\'image',
                     onPressed: controller.pickAndAnalyzeScreenshot,
                   ),
                 ),
@@ -61,7 +63,7 @@ class ScreenSearchPage extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Limites doc API: 25MB max, quota gratuit ~100 recherches / 24h / IP. Dans cette app, on considère qu’au-dessus de 80% c’est déjà plutôt bon.',
+              'Limites doc API: 25MB max, quota gratuit ~100 recherches / 24h / IP. Dans cette app, on considère qu\'au-dessus de 80% c\'est déjà plutôt bon.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -87,7 +89,11 @@ class ScreenSearchPage extends ConsumerWidget {
                       : () =>
                           controller.analyzeScreenshot(state.selectedImage!),
                 ),
-              ScreenStatus.success => _ResultsBlock(results: state.results),
+              ScreenStatus.success => _ResultsBlock(
+                  results: state.results,
+                  onAnimeDetailsTap: (animeId) =>
+                      context.push(AppRoutes.animeDetailsLocation(animeId)),
+                ),
             },
           ],
         ),
@@ -223,9 +229,13 @@ class _ErrorBlock extends StatelessWidget {
 }
 
 class _ResultsBlock extends StatelessWidget {
-  const _ResultsBlock({required this.results});
+  const _ResultsBlock({
+    required this.results,
+    required this.onAnimeDetailsTap,
+  });
 
   final List<TraceMoeResult> results;
+  final void Function(String animeId) onAnimeDetailsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +250,12 @@ class _ResultsBlock extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppSpacing.sm),
-        _TopResultCard(result: topResult),
+        _TopResultCard(
+          result: topResult,
+          onImageTap: topResult.anilistId > 0
+              ? () => onAnimeDetailsTap('${topResult.anilistId}')
+              : null,
+        ),
         const SizedBox(height: AppSpacing.lg),
         Text(
           'Autres résultats',
@@ -257,9 +272,13 @@ class _ResultsBlock extends StatelessWidget {
 }
 
 class _TopResultCard extends StatelessWidget {
-  const _TopResultCard({required this.result});
+  const _TopResultCard({
+    required this.result,
+    this.onImageTap,
+  });
 
   final TraceMoeResult result;
+  final VoidCallback? onImageTap;
 
   @override
   Widget build(BuildContext context) {
@@ -272,20 +291,56 @@ class _TopResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (result.previewImageUrl.isNotEmpty)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              child: Image.network(
-                result.previewImageUrl,
-                height: 180,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    _PreviewFallback(title: result.title),
-              ),
-            )
-          else
-            _PreviewFallback(title: result.title),
+          // Image cliquable avec overlay
+          GestureDetector(
+            onTap: onImageTap,
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  child: result.previewImageUrl.isNotEmpty
+                      ? Image.network(
+                          result.previewImageUrl,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              _PreviewFallback(title: result.title),
+                        )
+                      : _PreviewFallback(title: result.title),
+                ),
+                if (onImageTap != null)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              size: 14, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Voir les détails',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: 8,

@@ -48,6 +48,23 @@ class AniListAnimeRepository implements AnimeRepository {
   }
 
   @override
+  Future<List<AnimeSummary>> fetchAiringAnime() async {
+    final data = await _client.query(
+      '''
+      query {
+        Page(page: 1, perPage: 20) {
+          media(type: ANIME, status: RELEASING, sort: [TRENDING_DESC]) {
+            $_summaryFields
+          }
+        }
+      }
+      ''',
+    );
+
+    return _extractSummaries(data);
+  }
+
+  @override
   Future<AnimeDetails> getAnimeDetails(String id) async {
     final data = await _client.query(
       '''
@@ -58,6 +75,7 @@ class AniListAnimeRepository implements AnimeRepository {
           averageScore
           description(asHtml: false)
           siteUrl
+          genres
           title {
             romaji
             english
@@ -83,6 +101,8 @@ class AniListAnimeRepository implements AnimeRepository {
     final studio = _pickStudio(media['studios'] as Map<String, dynamic>);
     final episodes = media['episodes'] as int?;
     final averageScore = media['averageScore'] as int?;
+    final genres =
+        ((media['genres'] as List<dynamic>?) ?? const []).cast<String>();
 
     return AnimeDetails(
       id: (media['id'] as int).toString(),
@@ -92,14 +112,11 @@ class AniListAnimeRepository implements AnimeRepository {
       episodeCount: episodes ?? 0,
       averageScore: averageScore ?? 0,
       siteUrl: media['siteUrl'] as String? ?? '',
-      trailerLabel: 'Voir sur AniList',
-      recommendationLabel: 'Recommandations à venir',
-      characterLabel: 'Personnages à venir',
-      episodeProgressLabel: episodes == null ? 'Épisodes ?' : '0/$episodes ep',
       scoreLabel: averageScore == null ? 'Score ?' : '$averageScore/100',
       coverImageUrl: media['bannerImage'] as String? ??
           (media['coverImage'] as Map<String, dynamic>)['large'] as String? ??
           '',
+      genres: genres,
     );
   }
 

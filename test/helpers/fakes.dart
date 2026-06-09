@@ -56,6 +56,9 @@ class FakeAniListRepository implements AnimeRepository {
   Future<List<AnimeSummary>> fetchTrendingAnime() async => results;
 
   @override
+  Future<List<AnimeSummary>> fetchAiringAnime() async => results;
+
+  @override
   Future<AnimeDetails> getAnimeDetails(String id) async {
     final anime = results.firstWhere((item) => item.id == id);
     return AnimeDetails(
@@ -66,13 +69,9 @@ class FakeAniListRepository implements AnimeRepository {
       episodeCount: anime.episodeCount,
       averageScore: anime.averageScore,
       siteUrl: anime.siteUrl,
-      trailerLabel: 'Voir sur AniList',
-      recommendationLabel: 'Recommandations à venir',
-      characterLabel: 'Personnages à venir',
-      episodeProgressLabel:
-          anime.episodeCount > 0 ? '0/${anime.episodeCount} ep' : 'Épisodes ?',
       scoreLabel: anime.scoreLabel,
       coverImageUrl: anime.coverImageUrl,
+      genres: anime.tags,
     );
   }
 

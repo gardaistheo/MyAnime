@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/anime_details/presentation/pages/anime_details_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/library/presentation/pages/library_page.dart';
+import '../../features/news/presentation/pages/news_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/screen/presentation/pages/screen_search_page.dart';
-import '../../features/placeholder/presentation/pages/placeholder_tab_page.dart';
 import '../../shared/widgets/anime_app_shell.dart';
 import 'routes.dart';
 
@@ -61,12 +61,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.news,
                 name: AppRoutes.newsName,
-                builder: (context, state) => const PlaceholderTabPage(
-                  title: 'News',
-                  subtitle:
-                      'Les actus anime auront un vrai écran quand tu le donneras.',
-                  icon: Icons.article_rounded,
-                ),
+                builder: (context, state) => const NewsPage(),
               ),
             ],
           ),
@@ -75,12 +70,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.profile,
                 name: AppRoutes.profileName,
-                builder: (context, state) => const PlaceholderTabPage(
-                  title: 'User',
-                  subtitle:
-                      'Le profil reste volontairement minimal pour cette V1.',
-                  icon: Icons.person_rounded,
-                ),
+                builder: (context, state) => const ProfilePage(),
               ),
             ],
           ),

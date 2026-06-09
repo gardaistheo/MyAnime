@@ -7,12 +7,9 @@ class AnimeDetails {
     required this.episodeCount,
     required this.averageScore,
     required this.siteUrl,
-    required this.trailerLabel,
-    required this.recommendationLabel,
-    required this.characterLabel,
-    required this.episodeProgressLabel,
     required this.scoreLabel,
     required this.coverImageUrl,
+    this.genres = const [],
   });
 
   final String id;
@@ -22,10 +19,7 @@ class AnimeDetails {
   final int episodeCount;
   final int averageScore;
   final String siteUrl;
-  final String trailerLabel;
-  final String recommendationLabel;
-  final String characterLabel;
-  final String episodeProgressLabel;
   final String scoreLabel;
   final String coverImageUrl;
+  final List<String> genres;
 }

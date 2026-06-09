@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -7,7 +8,6 @@ import '../../../../features/library/presentation/controllers/library_controller
 import '../../../../shared/models/anime_summary.dart';
 import '../../../../shared/providers/repositories.dart';
 import '../../../../shared/widgets/anime_poster.dart';
-import '../../../../shared/widgets/anime_primary_button.dart';
 
 class AnimeDetailsPage extends ConsumerWidget {
   const AnimeDetailsPage({
@@ -36,7 +36,7 @@ class AnimeDetailsPage extends ConsumerWidget {
               subtitle:
                   '${details.studio} • ${details.episodeCount > 0 ? '${details.episodeCount} ep' : 'Épisodes ?'}',
               description: details.description,
-              tags: const [],
+              tags: details.genres,
               episodeCount: details.episodeCount,
               scoreLabel: details.scoreLabel,
               coverImageUrl: details.coverImageUrl,
@@ -51,8 +51,9 @@ class AnimeDetailsPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // ── Hero ──────────────────────────────────────────────
                   SizedBox(
-                    height: 430,
+                    height: 380,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -77,7 +78,7 @@ class AnimeDetailsPage extends ConsumerWidget {
                           ),
                         ),
                         Positioned(
-                          bottom: 96,
+                          bottom: 16,
                           left: 0,
                           right: 0,
                           child: Column(
@@ -85,90 +86,162 @@ class AnimeDetailsPage extends ConsumerWidget {
                               AnimePoster(
                                 title: details.title,
                                 imageUrl: details.coverImageUrl,
-                                width: 132,
-                                height: 176,
+                                width: 120,
+                                height: 160,
                               ),
-                              const SizedBox(height: AppSpacing.lg),
-                              Text(
-                                details.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(fontSize: 26),
+                              const SizedBox(height: AppSpacing.md),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: Text(
+                                  details.title,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(fontSize: 22),
+                                ),
                               ),
+                              const SizedBox(height: 4),
                               Text(
                                 details.studio,
+                                textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.bodyLarge,
                               ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          left: 20,
-                          right: 20,
-                          bottom: 24,
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 12,
-                            runSpacing: 10,
-                            children: [
-                              AnimePrimaryButton(
-                                label: isSaved
-                                    ? 'Mettre à jour'
-                                    : 'Suivre cet anime',
-                                onPressed: () async {
-                                  final selectedEpisode =
-                                      await _showEpisodePicker(
-                                    context,
-                                    initialEpisode: savedAnime?.currentEpisode,
-                                    maxEpisodes: details.episodeCount,
-                                  );
-                                  if (selectedEpisode == null ||
-                                      !context.mounted) {
-                                    return;
-                                  }
-
-                                  await libraryController.saveProgress(
-                                    libraryAnime,
-                                    selectedEpisode,
-                                  );
-                                },
-                              ),
-                              _InfoPill(
-                                label: details.episodeCount > 0
-                                    ? '${savedAnime?.currentEpisode ?? 0}/${details.episodeCount} ep'
-                                    : 'Épisode ${savedAnime?.currentEpisode ?? 0}',
-                              ),
-                              _InfoPill(label: details.scoreLabel),
-                              if (isSaved)
-                                TextButton(
-                                  onPressed: () =>
-                                      libraryController.toggleAnime(
-                                    savedAnime,
-                                  ),
-                                  child: const Text('Retirer'),
-                                ),
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  // ── Actions ───────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 48),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Column(
                       children: [
-                        Text(
-                          'Synopsis',
-                          style: Theme.of(context).textTheme.titleLarge,
-                          textAlign: TextAlign.center,
+                        // Info pills
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _InfoPill(
+                              label: details.episodeCount > 0
+                                  ? '${savedAnime?.currentEpisode ?? 0}/${details.episodeCount} ep'
+                                  : 'Épisode ${savedAnime?.currentEpisode ?? 0}',
+                            ),
+                            const SizedBox(width: 12),
+                            _InfoPill(label: details.scoreLabel),
+                          ],
                         ),
-                        const SizedBox(height: AppSpacing.xl),
-                        Text(
-                          '${details.description}\n\n${details.recommendationLabel}\n${details.characterLabel}\n${details.trailerLabel}\nRéseaux',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge,
+                        const SizedBox(height: AppSpacing.md),
+                        // Primary action — prominent
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: Icon(
+                              isSaved
+                                  ? Icons.edit_rounded
+                                  : Icons.bookmark_add_rounded,
+                            ),
+                            label: Text(
+                              isSaved ? 'Mettre à jour' : 'Suivre cet anime',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            onPressed: () async {
+                              final selectedEpisode =
+                                  await _showEpisodePicker(
+                                context,
+                                initialEpisode: savedAnime?.currentEpisode,
+                                maxEpisodes: details.episodeCount,
+                              );
+                              if (selectedEpisode == null ||
+                                  !context.mounted) {
+                                return;
+                              }
+                              await libraryController.saveProgress(
+                                libraryAnime,
+                                selectedEpisode,
+                              );
+                            },
+                          ),
                         ),
+                        if (isSaved) ...[
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () =>
+                                libraryController.toggleAnime(savedAnime),
+                            icon: const Icon(
+                                Icons.bookmark_remove_rounded,
+                                size: 18),
+                            label: const Text('Retirer de la liste'),
+                            style: TextButton.styleFrom(
+                                foregroundColor: AppColors.textMuted),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // ── Sections de contenu ───────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 48),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _SectionHeader('Synopsis'),
+                        const SizedBox(height: AppSpacing.sm),
+                        Center(
+                          child: Text(
+                            details.description,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ),
+                        if (details.genres.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          const _SectionHeader('Genres'),
+                          const SizedBox(height: AppSpacing.sm),
+                          Center(
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final genre in details.genres)
+                                  _GenreChip(label: genre),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (details.siteUrl.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          const _SectionHeader('Liens'),
+                          const SizedBox(height: AppSpacing.sm),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: () => launchUrl(
+                                Uri.parse(details.siteUrl),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              icon: const Icon(
+                                  Icons.open_in_new_rounded,
+                                  size: 18),
+                              label: const Text('Voir sur AniList'),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -209,49 +282,101 @@ Future<int?> _showEpisodePicker(
   required int maxEpisodes,
   int? initialEpisode,
 }) async {
-  final controller = TextEditingController(
+  final textController = TextEditingController(
     text: (initialEpisode ?? 0).toString(),
   );
 
   return showDialog<int>(
     context: context,
     builder: (dialogContext) {
-      return AlertDialog(
-        title: const Text('Épisode actuel'),
-        content: TextField(
-          key: const Key('episode_progress_field'),
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText: maxEpisodes > 0
-                ? 'Entre 0 et $maxEpisodes'
-                : 'Numéro d’épisode',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () {
-              final parsedValue = int.tryParse(controller.text.trim());
-              if (parsedValue == null || parsedValue < 0) {
-                return;
-              }
+      String? errorText;
 
-              final nextEpisode = maxEpisodes > 0
-                  ? parsedValue.clamp(0, maxEpisodes)
-                  : parsedValue;
-              Navigator.of(dialogContext).pop(nextEpisode);
-            },
-            child: const Text('Enregistrer'),
-          ),
-        ],
+      return StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('Épisode actuel'),
+            content: TextField(
+              key: const Key('episode_progress_field'),
+              controller: textController,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: maxEpisodes > 0
+                    ? 'Entre 0 et $maxEpisodes'
+                    : 'Numéro d\'épisode',
+                errorText: errorText,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Annuler'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final parsed =
+                      int.tryParse(textController.text.trim());
+                  if (parsed == null || parsed < 0) {
+                    setState(
+                        () => errorText = 'Entrez un numéro valide');
+                    return;
+                  }
+                  if (maxEpisodes > 0 && parsed > maxEpisodes) {
+                    setState(() => errorText =
+                        'Cet anime n\'a que $maxEpisodes épisodes');
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(parsed);
+                },
+                child: const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
       );
     },
   );
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+    );
+  }
+}
+
+class _GenreChip extends StatelessWidget {
+  const _GenreChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context)
+            .textTheme
+            .labelMedium
+            ?.copyWith(color: AppColors.accentMuted),
+      ),
+    );
+  }
 }
 
 class _InfoPill extends StatelessWidget {
